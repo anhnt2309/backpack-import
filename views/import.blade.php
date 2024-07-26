@@ -22,7 +22,7 @@
 
                         <div class="custom-file">
                             <input type="file" class="custom-file-input" accept=".csv" name="csv_file" required id="customFile">
-                            <label class="custom-file-label" for="customFile">Choose file</label>
+                            <label class="custom-file-label" style="overflow: auto" for="customFile">Choose file</label>
                         </div>
 
                         @if ($errors->has('csv_file'))
