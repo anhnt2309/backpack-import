@@ -147,6 +147,14 @@ trait ImportOperation
     public function importParse(Request $request)
     {
         $path = $request->file('csv_file')->getRealPath();
+        $validator = Validator::make($request->all(), [
+            'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:15000'], // 15MB
+        ]);
+
+        // if validation fails
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
         $csv  = CsvReader::FromFile($path);
         $data = $csv->getRows();
 
