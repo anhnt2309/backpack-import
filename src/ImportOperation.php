@@ -135,6 +135,78 @@ trait ImportOperation
         return response()->stream($callback, 200, $headers);
     }
 
+    private function validateFileTypeImport($requestFile, $allowedExtension = ['.jpg', '.jpeg', '.png'], $allowedMimeType = ['image/jpeg', 'image/png'])
+    {
+        // Sanity check
+        if (empty($requestFile)) {
+            return [
+                'success' => false,
+                'message' => 'No file uploaded (739190)',
+            ];
+        }
+        if (empty($requestFile->getClientOriginalName())) {
+            return [
+                'success' => false,
+                'message' => 'No file uploaded (748169)',
+            ];
+        }
+        if (empty($requestFile->getSize())) {
+            return [
+                'success' => false,
+                'message' => 'No file uploaded (748172)',
+            ];
+        }
+        if (!file_exists($requestFile->getPathname())) {
+            return [
+                'success' => false,
+                'message' => 'No file uploaded (748173)',
+            ];
+        }
+        if (!empty($requestFile->getError())) {
+            return [
+                'success' => false,
+                'message' => $requestFile->getError() . '. File upload error (742571)',
+            ];
+        }
+
+        // Get file info
+        $filename = $requestFile->getClientOriginalName();
+        $filesize = $requestFile->getSize();
+        $filepath = $requestFile->getPathname();
+        $file_ext = strtolower(strrchr($filename, '.'));     //last occurrence
+        $file_mime_type = strtolower(mime_content_type($filepath));
+        //check whether extension is allowed
+        $whitelist = $allowedExtension;
+        if (!in_array($file_ext, $whitelist)) {
+            return [
+                'success' => false,
+                'message' => "Invalid file extension: $filename (Error Code 758711)",
+            ];
+        }
+
+        //check mimetype
+        if (!empty($allowedMimeType)) { // optional to support skipping check mimetype
+            $allowed_image_mime_types = $allowedMimeType;
+            //check file type
+            // //Validate file type submitted by the client also
+            // $submited_file_type = $SINGLE_FILE['type'];
+            // if (!in_array($submited_file_type, $allowed_image_mime_types))
+            //     return ["error" => "Invalid file type: $filename (Error Code 758712)"];
+
+            //Validate the mimetype based on actual file content
+            if (!in_array($file_mime_type, $allowed_image_mime_types)) {
+                return [
+                    'success' => false,
+                    'message' => "Invalid mimetype: $filename (Error Code 758716)",
+                ];
+            }
+        }
+
+        return [
+            'success' => true,
+        ];
+    }
+
     /**
      * Action method linked to the POST <entityname>/importParse route.
      * This method consumes the file upload, saves it to the CsvData entity which stores the uploaded file in interim storage.
@@ -146,7 +218,16 @@ trait ImportOperation
      */
     public function importParse(Request $request)
     {
-        $path = $request->file('csv_file')->getRealPath();
+        // Check forked github repo for the fix
+        // VAPT Fix: Custom validation for file type
+        $customValidator = $this->validateFileTypeImport($request->file('csv_file'), ['csv', 'txt'], 'application/csv', 'text/plain');
+        if (empty($customValidator)) {
+            return redirect()->back()->withErrors(['csv_file' => 'Invalid file type. Please upload a CSV file. (2222)'])->withInput();
+        }
+        if (isset($customValidator['success']) && $customValidator['success'] === false) {
+            return redirect()->back()->withErrors(['csv_file' => $customValidator['message'] ?? 'Invalid file type. Please upload a CSV file. (2121)'])->withInput();
+        }
+
         $validator = Validator::make($request->all(), [
             'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:15000'], // 15MB
         ]);
