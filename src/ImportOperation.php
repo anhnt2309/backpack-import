@@ -236,6 +236,7 @@ trait ImportOperation
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
         }
+        $path = $request->file('csv_file')->getRealPath();
         $csv  = CsvReader::FromFile($path);
         $data = $csv->getRows();
 
