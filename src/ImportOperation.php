@@ -220,7 +220,7 @@ trait ImportOperation
     {
         // Check forked github repo for the fix
         // VAPT Fix: Custom validation for file type
-        $customValidator = $this->validateFileTypeImport($request->file('csv_file'), ['csv', 'txt'], 'application/csv', 'text/plain');
+        $customValidator = $this->validateFileTypeImport($request->file('csv_file'), ['.csv', '.txt'], ['application/csv', 'text/plain']);
         if (empty($customValidator)) {
             return redirect()->back()->withErrors(['csv_file' => 'Invalid file type. Please upload a CSV file. (2222)'])->withInput();
         }
